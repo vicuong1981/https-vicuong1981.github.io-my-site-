@@ -4,37 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Contact Us</title>
-    <!--
-      ============================================================
-      HOW TO WIRE THIS UP TO YOUR GOOGLE FORM
-      ============================================================
-      1. Create a Google Form at https://forms.google.com with 4 questions:
-           - Name         (Short answer)
-           - Email        (Short answer)
-           - Subject      (Short answer)
-           - Message      (Paragraph)
-      2. Click "Send" (top-right) → the <> (link) icon → copy the
-         form's public URL. It looks like:
-           https://docs.google.com/forms/d/e/1FAIpQLSxxxxxxxxxxxxxxxxxx/viewform
-         The part between /e/ and /viewform is your FORM_ID.
-         Paste it into GOOGLE_FORM_ID below.
-      3. Get the entry IDs for each field:
-           a. Open the live form URL in your browser.
-           b. Right-click → "View Page Source".
-           c. Search for "entry." — each field has an ID like
-              "entry.1234567890".
-           d. Match them to the field order (Name, Email, Subject,
-              Message) and fill in the ENTRY_IDS block below.
-      4. Open this file in a browser and test — submissions will
-         land in the Google Form's "Responses" tab (and in a
-         linked Google Sheet if you set one up).
-
-      Note: Google Forms doesn't return CORS-friendly responses,
-      so we submit with mode:"no-cors". This means we can't read
-      the response — we just assume success if fetch didn't throw.
-      The upside: no backend, no API keys, no CORS proxy needed.
-      ============================================================
-    -->
+    
     <style>
       :root {
         --bg: #f7f7f8;
