@@ -4,7 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Contact Us</title>
-    
+
+    <!--
+      ================================================================
+      Split.io JavaScript SDK — loaded via CDN.
+      Exposes `splitio` global (and `splitio.SplitFactory`).
+      Docs: https://help.split.io/hc/en-us/articles/360020448791-JavaScript-SDK
+      ================================================================
+    -->
+    <script src="https://cdn.split.io/sdk/split-10.24.0.min.js"></script>
+
     <style>
       :root {
         --bg: #f7f7f8;
@@ -46,29 +55,15 @@
         height: 180px;
         object-fit: cover;
         background: #e5e7eb;
+        transition: opacity 200ms ease;
       }
+      .banner.loading { opacity: 0.4; }
       .card-body { padding: 1.75rem 2rem 2rem; }
-      h1 {
-        margin: 0 0 0.5rem;
-        font-size: 1.5rem;
-        letter-spacing: -0.01em;
-      }
-      .subtitle {
-        margin: 0 0 1.5rem;
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
+      h1 { margin: 0 0 0.5rem; font-size: 1.5rem; letter-spacing: -0.01em; }
+      .subtitle { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.95rem; }
       .field { margin-bottom: 1.1rem; }
-      label {
-        display: block;
-        font-weight: 500;
-        font-size: 0.9rem;
-        margin-bottom: 0.4rem;
-      }
-      .required::after {
-        content: " *";
-        color: var(--error);
-      }
+      label { display: block; font-weight: 500; font-size: 0.9rem; margin-bottom: 0.4rem; }
+      .required::after { content: " *"; color: var(--error); }
       input, textarea {
         width: 100%;
         font-family: inherit;
@@ -86,14 +81,8 @@
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
       }
       textarea { min-height: 120px; resize: vertical; }
-      .error-msg {
-        color: var(--error);
-        font-size: 0.85rem;
-        margin-top: 0.3rem;
-        display: none;
-      }
-      .field.has-error input,
-      .field.has-error textarea { border-color: var(--error); }
+      .error-msg { color: var(--error); font-size: 0.85rem; margin-top: 0.3rem; display: none; }
+      .field.has-error input, .field.has-error textarea { border-color: var(--error); }
       .field.has-error .error-msg { display: block; }
       button {
         width: 100%;
@@ -110,109 +99,184 @@
       }
       button:hover:not(:disabled) { background: var(--accent-hover); }
       button:disabled { opacity: 0.6; cursor: not-allowed; }
-      .status {
-        margin-top: 1rem;
-        padding: 0.8rem 1rem;
-        border-radius: 8px;
-        font-size: 0.92rem;
-        display: none;
-      }
-      .status.success {
-        background: #ecfdf5;
-        color: var(--success);
-        border: 1px solid #a7f3d0;
-        display: block;
-      }
-      .status.error {
-        background: #fef2f2;
-        color: var(--error);
-        border: 1px solid #fecaca;
-        display: block;
+      .status { margin-top: 1rem; padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.92rem; display: none; }
+      .status.success { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; display: block; }
+      .status.error { background: #fef2f2; color: var(--error); border: 1px solid #fecaca; display: block; }
+      .debug {
+        margin-top: 0.75rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       }
     </style>
   </head>
   <body>
     <div class="card">
+      <!-- Banner starts with the default image; Split.io updates it once the SDK is ready. -->
       <img
-        class="banner"
+        id="banner"
+        class="banner loading"
         src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
-        alt="Modern business office interior"
+        alt="Loading…"
       />
       <div class="card-body">
-      <h1>Get in touch</h1>
-      <p class="subtitle">Fill out the form and we'll get back to you soon.</p>
+        <h1>Get in touch</h1>
+        <p class="subtitle">Fill out the form and we'll get back to you soon.</p>
 
-      <form id="contactForm" novalidate>
-        <div class="field">
-          <label for="name" class="required">Name</label>
-          <input id="name" name="name" type="text" autocomplete="name" required />
-          <div class="error-msg">Please enter your name.</div>
-        </div>
-
-        <div class="field">
-          <label for="email" class="required">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
-          <div class="error-msg">Please enter a valid email address.</div>
-        </div>
-
-        <div class="field">
-          <label for="subject" class="required">Subject</label>
-          <input id="subject" name="subject" type="text" required />
-          <div class="error-msg">Please enter a subject.</div>
-        </div>
-
-        <div class="field">
-          <label for="message" class="required">Message</label>
-          <textarea id="message" name="message" required></textarea>
-          <div class="error-msg">Please enter a message.</div>
-        </div>
-
-        <button id="submitBtn" type="submit">Send message</button>
-        <div id="status" class="status" role="status" aria-live="polite"></div>
-      </form>
+        <form id="contactForm" novalidate>
+          <div class="field">
+            <label for="name" class="required">Name</label>
+            <input id="name" name="name" type="text" autocomplete="name" required />
+            <div class="error-msg">Please enter your name.</div>
+          </div>
+          <div class="field">
+            <label for="email" class="required">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required />
+            <div class="error-msg">Please enter a valid email address.</div>
+          </div>
+          <div class="field">
+            <label for="subject" class="required">Subject</label>
+            <input id="subject" name="subject" type="text" required />
+            <div class="error-msg">Please enter a subject.</div>
+          </div>
+          <div class="field">
+            <label for="message" class="required">Message</label>
+            <textarea id="message" name="message" required></textarea>
+            <div class="error-msg">Please enter a message.</div>
+          </div>
+          <button id="submitBtn" type="submit">Send message</button>
+          <div id="status" class="status" role="status" aria-live="polite"></div>
+          <div id="debug" class="debug"></div>
+        </form>
       </div>
     </div>
 
+    <!-- ==========================================================
+         Split.io localhost-mode wiring
+         ========================================================== -->
     <script>
-      // ============================================================
-      // CONFIGURATION — replace these placeholders with your values
-      // ============================================================
-      const GOOGLE_FORM_ID = "1FAIpQLSdrv_wrCzGFfCnJVPaq8C9suQ1YHAH4P5ae5WuhUwljMqhw9g"; // e.g., "1FAIpQLSxxxxxxxxxxxxxxxxxx"
-
-      const ENTRY_IDS = {
-        name:    "entry.1119900353", // replace with your Name field entry ID
-        email:   "entry.401082347", // replace with your Email field entry ID
-        subject: "entry.299497948", // replace with your Subject field entry ID
-        message: "entry.116500200", // replace with your Message field entry ID
+      // ------------------------------------------------------------
+      // Banner treatments — mirrors splits.yaml from the Python version.
+      // Each treatment carries a stringified-JSON config with url + alt.
+      // ------------------------------------------------------------
+      const BANNER_TREATMENTS = {
+        office_modern: {
+          treatment: "office_modern",
+          config: JSON.stringify({
+            url: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
+            alt: "Modern business office interior",
+          }),
+        },
+        team_meeting: {
+          treatment: "team_meeting",
+          config: JSON.stringify({
+            url: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
+            alt: "Business team in a meeting",
+          }),
+        },
+        coworking_space: {
+          treatment: "coworking_space",
+          config: JSON.stringify({
+            url: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=80",
+            alt: "Coworking space with laptops",
+          }),
+        },
       };
-      // ============================================================
+
+      // User → treatment mapping. The JS SDK's localhost mode doesn't
+      // support per-key routing natively (Python YAML does), so we build
+      // the `features` object for the current user before init.
+      const USER_TO_TREATMENT = {
+        "vicuongluong@linearb.io": "team_meeting",
+        "beta_user_1": "coworking_space",
+        "beta_user_2": "coworking_space",
+      };
+      const DEFAULT_TREATMENT = "office_modern";
+
+      // Pick up ?user=... from the URL; fallback to "anonymous".
+      const userKey = new URLSearchParams(window.location.search).get("user") || "anonymous";
+      const treatmentName = USER_TO_TREATMENT[userKey] || DEFAULT_TREATMENT;
+
+      // ------------------------------------------------------------
+      // Initialize the Split factory in localhost mode.
+      //   - authorizationKey: "localhost" => no network, read `features`.
+      //   - key: identifier for this user (visible in SDK logs).
+      //   - features: map of flag name => treatment (or {treatment, config}).
+      // Swap "localhost" for your SDK key to go live.
+      // ------------------------------------------------------------
+      const { SplitFactory } = splitio;
+      const factory = SplitFactory({
+        core: {
+          authorizationKey: "1iiee4eg111ln2fl3ee5deipp3bdu1raljec",
+          key: userKey,
+        },
+        features: {
+          banner_image: BANNER_TREATMENTS[treatmentName],
+        },
+      });
+      const client = factory.client();
+
+      const bannerEl = document.getElementById("banner");
+      const debugEl = document.getElementById("debug");
+
+      function applyBanner(treatment, rawConfig) {
+        try {
+          const cfg = JSON.parse(rawConfig);
+          bannerEl.src = cfg.url;
+          bannerEl.alt = cfg.alt;
+        } catch (e) {
+          console.error("Bad banner config", e);
+        } finally {
+          bannerEl.classList.remove("loading");
+          debugEl.textContent = `Split: user=${userKey} → treatment=${treatment}`;
+        }
+      }
+
+      client.on(client.Event.SDK_READY, () => {
+        const result = client.getTreatmentWithConfig("banner_image");
+        if (result.treatment === "control") {
+          // Flag missing — keep the default banner already in the <img>.
+          bannerEl.classList.remove("loading");
+          debugEl.textContent = `Split: user=${userKey} → treatment=control (using fallback)`;
+          return;
+        }
+        applyBanner(result.treatment, result.config);
+      });
+
+      client.on(client.Event.SDK_READY_TIMED_OUT, () => {
+        console.warn("Split SDK ready timed out — using fallback banner");
+        bannerEl.classList.remove("loading");
+      });
+    </script>
+
+    <!-- ==========================================================
+         Contact form → Google Forms submission
+         ========================================================== -->
+    <script>
+      // Replace these with your own — see the setup guide for how to get them.
+      const GOOGLE_FORM_ID "1FAIpQLSdrv_wrCzGFfCnJVPaq8C9suQ1YHAH4P5ae5WuhUwljMqhw9g";
+      const ENTRY_IDS = {
+        name:    "entry.1119900353",
+        email:   "entry.401082347",
+        subject: "entry.299497948",
+        message: "entry.116500200",
+      };
 
       const form = document.getElementById("contactForm");
       const submitBtn = document.getElementById("submitBtn");
       const statusEl = document.getElementById("status");
 
-      function setError(fieldId, hasError) {
-        const field = document.getElementById(fieldId).closest(".field");
-        field.classList.toggle("has-error", hasError);
+      function setError(id, on) {
+        document.getElementById(id).closest(".field").classList.toggle("has-error", on);
       }
-
-      function isValidEmail(value) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+      function validate(v) {
+        setError("name",    !v.name.trim());
+        setError("email",   !isEmail(v.email));
+        setError("subject", !v.subject.trim());
+        setError("message", !v.message.trim());
+        return v.name.trim() && isEmail(v.email) && v.subject.trim() && v.message.trim();
       }
-
-      function validate(values) {
-        let ok = true;
-        setError("name",    !values.name.trim());
-        setError("email",   !isValidEmail(values.email));
-        setError("subject", !values.subject.trim());
-        setError("message", !values.message.trim());
-        ok = values.name.trim()
-          && isValidEmail(values.email)
-          && values.subject.trim()
-          && values.message.trim();
-        return ok;
-      }
-
       function showStatus(kind, text) {
         statusEl.className = "status " + kind;
         statusEl.textContent = text;
@@ -229,11 +293,10 @@
           subject: document.getElementById("subject").value,
           message: document.getElementById("message").value,
         };
-
         if (!validate(values)) return;
 
         if (GOOGLE_FORM_ID === "REPLACE_WITH_YOUR_FORM_ID") {
-          showStatus("error", "Form not configured yet. See the comments at the top of the HTML file for setup steps.");
+          showStatus("error", "Form not configured yet. Add your Google Form ID and entry IDs.");
           return;
         }
 
@@ -245,14 +308,11 @@
 
         submitBtn.disabled = true;
         submitBtn.textContent = "Sending…";
-
         try {
           await fetch(
             `https://docs.google.com/forms/d/e/${GOOGLE_FORM_ID}/formResponse`,
             { method: "POST", mode: "no-cors", body }
           );
-          // With mode:"no-cors" we can't inspect the response, so we
-          // optimistically show success if fetch didn't throw.
           showStatus("success", "Thanks! Your message has been sent.");
           form.reset();
         } catch (err) {
@@ -265,4 +325,3 @@
     </script>
   </body>
 </html>
-
