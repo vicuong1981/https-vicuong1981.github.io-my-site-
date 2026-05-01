@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>My Contact Us Form</title>
+    <title>Contact Us</title>
 
     <!--
       ================================================================
@@ -112,11 +112,11 @@
   </head>
   <body>
     <div class="card">
-      <!-- Banner starts with the default image; Split.io updates it once the SDK is ready. -->
+      <!-- Banner starts with the daylight image; Split.io may swap it to night once the SDK is ready. -->
       <img
         id="banner"
         class="banner loading"
-        src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
+        src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80"
         alt="Loading…"
       />
       <div class="card-body">
@@ -156,53 +156,62 @@
          ========================================================== -->
     <script>
       // ------------------------------------------------------------
-      // Banner treatments — mirrors splits.yaml from the Python version.
-      // Each treatment carries a stringified-JSON config with url + alt.
+      // Banner treatments for the `daylight_or_night_banner` flag.
+      //
+      // Each treatment carries a stringified-JSON config blob (Split's
+      // "Dynamic Configurations" feature) holding the image URL + alt
+      // text. Paste these same blobs into the matching treatment in the
+      // Split.io dashboard so the live flag and the local fallback agree.
       // ------------------------------------------------------------
+      const FLAG_NAME = "daylight_or_night_banner";
       const BANNER_TREATMENTS = {
-        office_modern: {
-          treatment: "office_modern",
+        daylight: {
+          treatment: "daylight",
           config: JSON.stringify({
-            url: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
-            alt: "Modern business office interior",
+            url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80",
+            alt: "Sunlit mountain landscape under a clear blue sky",
           }),
         },
-        team_meeting: {
-          treatment: "team_meeting",
+        night: {
+          treatment: "night",
           config: JSON.stringify({
-            url: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
-            alt: "Business team in a meeting",
-          }),
-        },
-        coworking_space: {
-          treatment: "coworking_space",
-          config: JSON.stringify({
-            url: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=80",
-            alt: "Coworking space with laptops",
+            url: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=1200&q=80",
+            alt: "Starry night sky over a silhouetted landscape",
           }),
         },
       };
+      const TREATMENT_NAMES = Object.keys(BANNER_TREATMENTS); // ["daylight", "night"]
 
-      // User → treatment mapping. The JS SDK's localhost mode doesn't
-      // support per-key routing natively (Python YAML does), so we build
-      // the `features` object for the current user before init.
-      const USER_TO_TREATMENT = {
-        "vicuongluong@linearb.io": "team_meeting",
-        "beta_user_1": "coworking_space",
-        "beta_user_2": "coworking_space",
-      };
-      const DEFAULT_TREATMENT = "office_modern";
+      // Local 50/50 coin flip — used when the real SDK can't reach
+      // Split.io, when the flag isn't defined yet, or when the SDK
+      // returns "control".
+      function randomTreatment() {
+        return TREATMENT_NAMES[Math.floor(Math.random() * TREATMENT_NAMES.length)];
+      }
 
-      // Pick up ?user=... from the URL; fallback to "anonymous".
-      const userKey = new URLSearchParams(window.location.search).get("user") || "anonymous";
-      const treatmentName = USER_TO_TREATMENT[userKey] || DEFAULT_TREATMENT;
+      // Fresh random user key on every page load.
+      //
+      // Real Split.io flags hash deterministically on the user key —
+      // the same key always lands in the same bucket. Generating a new
+      // key per refresh re-buckets the visitor each time, which gives
+      // the requested "random on every page refresh" behavior while
+      // still going through Split's normal 50/50 percentage rollout.
+      const userKey = "anon-" + Math.random().toString(36).slice(2, 10) + "-" + Date.now();
 
       // ------------------------------------------------------------
-      // Initialize the Split factory in localhost mode.
-      //   - authorizationKey: "localhost" => no network, read `features`.
-      //   - key: identifier for this user (visible in SDK logs).
-      //   - features: map of flag name => treatment (or {treatment, config}).
-      // Swap "localhost" for your SDK key to go live.
+      // Initialize the Split factory against the real cloud SDK.
+      //
+      // Dashboard setup checklist:
+      //   1. Create a flag named `daylight_or_night_banner`.
+      //   2. Add two treatments: `daylight` and `night`.
+      //   3. Set the default rule to 50% daylight / 50% night.
+      //   4. Paste the matching JSON blob from BANNER_TREATMENTS above
+      //      into each treatment's "Dynamic configuration" field.
+      //   5. Drop your client-side SDK key into authorizationKey below.
+      //
+      // If the SDK can't reach Split (timeout, missing flag, offline),
+      // we fall back to the local 50/50 coin flip so the page never
+      // breaks.
       // ------------------------------------------------------------
       const { SplitFactory } = splitio;
       const factory = SplitFactory({
@@ -210,8 +219,9 @@
           authorizationKey: "1iiee4eg111ln2fl3ee5deipp3bdu1raljec",
           key: userKey,
         },
-        features: {
-          banner_image: BANNER_TREATMENTS[treatmentName],
+        startup: {
+          // Stop waiting for Split after 3s and fall back to local random.
+          readyTimeout: 3,
         },
       });
       const client = factory.client();
@@ -219,33 +229,40 @@
       const bannerEl = document.getElementById("banner");
       const debugEl = document.getElementById("debug");
 
-      function applyBanner(treatment, rawConfig) {
+      function applyBanner(treatment, rawConfig, source) {
         try {
-          const cfg = JSON.parse(rawConfig);
+          const cfg = rawConfig
+            ? JSON.parse(rawConfig)
+            : JSON.parse(BANNER_TREATMENTS[treatment].config);
           bannerEl.src = cfg.url;
           bannerEl.alt = cfg.alt;
         } catch (e) {
           console.error("Bad banner config", e);
         } finally {
           bannerEl.classList.remove("loading");
-          debugEl.textContent = `Split: user=${userKey} → treatment=${treatment}`;
+          debugEl.textContent =
+            `Split: user=${userKey} → ${FLAG_NAME}=${treatment} (${source})`;
         }
       }
 
+      function applyLocalFallback(reason) {
+        const t = randomTreatment();
+        applyBanner(t, null, "local 50/50 — " + reason);
+      }
+
       client.on(client.Event.SDK_READY, () => {
-        const result = client.getTreatmentWithConfig("banner_image");
-        if (result.treatment === "control") {
-          // Flag missing — keep the default banner already in the <img>.
-          bannerEl.classList.remove("loading");
-          debugEl.textContent = `Split: user=${userKey} → treatment=control (using fallback)`;
+        const result = client.getTreatmentWithConfig(FLAG_NAME);
+        if (result.treatment === "control" || !BANNER_TREATMENTS[result.treatment]) {
+          // Flag not yet defined in the dashboard, or unrecognized treatment.
+          applyLocalFallback("flag returned " + result.treatment);
           return;
         }
-        applyBanner(result.treatment, result.config);
+        applyBanner(result.treatment, result.config, "Split.io");
       });
 
       client.on(client.Event.SDK_READY_TIMED_OUT, () => {
-        console.warn("Split SDK ready timed out — using fallback banner");
-        bannerEl.classList.remove("loading");
+        console.warn("Split SDK ready timed out — falling back to local random");
+        applyLocalFallback("SDK timed out");
       });
     </script>
 
@@ -254,7 +271,7 @@
          ========================================================== -->
     <script>
       // Replace these with your own — see the setup guide for how to get them.
-      const GOOGLE_FORM_ID "1FAIpQLSdrv_wrCzGFfCnJVPaq8C9suQ1YHAH4P5ae5WuhUwljMqhw9g";
+      const GOOGLE_FORM_ID = "1FAIpQLSdrv_wrCzGFfCnJVPaq8C9suQ1YHAH4P5ae5WuhUwljMqhw9g";
       const ENTRY_IDS = {
         name:    "entry.1119900353",
         email:   "entry.401082347",

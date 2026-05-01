@@ -1,0 +1,3 @@
+- Do not comment on missing documentation.
+- Do not comment on missing tests.
+- For JavaScript code, enforce using camelCase for variables and functions.
